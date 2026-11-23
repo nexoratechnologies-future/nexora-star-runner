@@ -1,0 +1,428 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXORA STAR RUNNER</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #050914;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+header {
+  padding: 20px;
+  background: #080f20;
+  border-bottom: 2px solid #168bff;
+}
+
+header h1 {
+  margin: 0;
+  color: #168bff;
+  letter-spacing: 3px;
+}
+
+header p {
+  color: #b7c9e5;
+  font-size: 12px;
+}
+
+.game-container {
+  max-width: 900px;
+  margin: 25px auto;
+  padding: 10px;
+}
+
+canvas {
+  width: 100%;
+  display: block;
+  background: #07152c;
+  border: 2px solid #168bff;
+  border-radius: 10px;
+}
+
+.controls {
+  margin-top: 18px;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+button {
+  margin-top: 15px;
+  background: #087cf0;
+  border: none;
+  color: white;
+  padding: 13px 30px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #005fc5;
+}
+
+footer {
+  margin-top: 35px;
+  padding: 20px;
+  color: #8796ac;
+  background: #080f20;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>NEXORA</h1>
+  <p>GAMES & TECHNOLOGIES</p>
+  <h2>STAR RUNNER</h2>
+</header>
+
+<div class="game-container">
+
+  <canvas id="game" width="850" height="400"></canvas>
+
+  <div class="controls">
+    Press SPACE or UP ARROW to jump.
+    <br>
+    On mobile: Tap the game to jump.
+  </div>
+
+  <button id="startBtn">START GAME</button>
+
+</div>
+
+<footer>
+  © 2026 NEXORA Games & Technologies
+  <br>
+  WE CREATE GAMES. WE BUILD APPS.
+</footer>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const startBtn = document.getElementById("startBtn");
+
+const W = canvas.width;
+const H = canvas.height;
+const ground = 335;
+
+let running = false;
+let gameOver = false;
+let score = 0;
+let coins = 0;
+let speed = 5;
+let frame = 0;
+
+const player = {
+  x: 100,
+  y: ground - 48,
+  w: 34,
+  h: 48,
+  vy: 0,
+  jumping: false
+};
+
+let obstacles = [];
+let coinItems = [];
+let stars = [];
+
+for (let i = 0; i < 65; i++) {
+  stars.push({
+    x: Math.random() * W,
+    y: Math.random() * 270,
+    size: Math.random() * 2 + 1
+  });
+}
+
+function resetGame() {
+  score = 0;
+  coins = 0;
+  speed = 5;
+  frame = 0;
+
+  obstacles = [];
+  coinItems = [];
+
+  player.y = ground - player.h;
+  player.vy = 0;
+  player.jumping = false;
+
+  gameOver = false;
+  running = true;
+
+  startBtn.textContent = "RESTART GAME";
+}
+
+function jump() {
+  if (!running) {
+    if (gameOver) {
+      resetGame();
+      return;
+    }
+
+    resetGame();
+    return;
+  }
+
+  if (!player.jumping) {
+    player.vy = -14;
+    player.jumping = true;
+  }
+}
+
+startBtn.addEventListener("click", () => {
+  resetGame();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space" || e.code === "ArrowUp") {
+    e.preventDefault();
+    jump();
+  }
+});
+
+canvas.addEventListener("pointerdown", () => {
+  jump();
+});
+
+function drawBackground() {
+  const gradient = ctx.createLinearGradient(0, 0, 0, H);
+
+  gradient.addColorStop(0, "#07152e");
+  gradient.addColorStop(1, "#10294b");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+
+  stars.forEach(star => {
+    ctx.fillStyle = "#b5dcff";
+    ctx.fillRect(star.x, star.y, star.size, star.size);
+  });
+
+  ctx.fillStyle = "#16385d";
+  ctx.fillRect(0, ground, W, H - ground);
+
+  ctx.strokeStyle = "#168bff";
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.moveTo(0, ground);
+  ctx.lineTo(W, ground);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#28547c";
+  ctx.lineWidth = 1;
+
+  for (let x = 0; x < W; x += 55) {
+    ctx.beginPath();
+    ctx.moveTo(x, ground + 20);
+    ctx.lineTo(x + 25, H);
+    ctx.stroke();
+  }
+}
+
+function drawPlayer() {
+  ctx.shadowColor = "#168bff";
+  ctx.shadowBlur = 15;
+
+  ctx.fillStyle = "#168bff";
+  ctx.fillRect(
+    player.x,
+    player.y,
+    player.w,
+    player.h
+  );
+
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(
+    player.x + 20,
+    player.y + 9,
+    8,
+    7
+  );
+
+  ctx.fillStyle = "#06214a";
+  ctx.fillRect(
+    player.x + 5,
+    player.y + 34,
+    9,
+    14
+  );
+}
+
+function drawObstacles() {
+  obstacles.forEach(o => {
+    ctx.shadowColor = "#ff4141";
+    ctx.shadowBlur = 12;
+
+    ctx.fillStyle = "#ff4141";
+    ctx.fillRect(o.x, o.y, o.w, o.h);
+
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(o.x + 5, o.y + 7, 5, 5);
+  });
+}
+
+function drawCoins() {
+  coinItems.forEach(c => {
+    ctx.shadowColor = "#ffd34e";
+    ctx.shadowBlur = 12;
+
+    ctx.fillStyle = "#ffd34e";
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#946100";
+    ctx.font = "bold 13px Arial";
+    ctx.fillText("$", c.x - 4, c.y + 5);
+  });
+}
+
+function drawScore() {
+  ctx.fillStyle = "white";
+  ctx.font = "bold 20px Arial";
+
+  ctx.fillText("SCORE: " + score, 20, 35);
+  ctx.fillText("COINS: " + coins, 20, 65);
+}
+
+function collision(a, b) {
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  );
+}
+
+function update() {
+  if (!running) return;
+
+  frame++;
+  score++;
+
+  speed = Math.min(5 + score / 1200, 11);
+
+  // Player gravity
+  player.y += player.vy;
+  player.vy += 0.65;
+
+  if (player.y >= ground - player.h) {
+    player.y = ground - player.h;
+    player.vy = 0;
+    player.jumping = false;
+  }
+
+  // Generate obstacles
+  if (frame % Math.max(45, 90 - Math.floor(speed * 3)) === 0) {
+    obstacles.push({
+      x: W,
+      y: ground - 40,
+      w: 25,
+      h: 40
+    });
+  }
+
+  // Generate coins
+  if (frame % 85 === 0) {
+    coinItems.push({
+      x: W,
+      y: ground - 85 - Math.random() * 65,
+      w: 20,
+      h: 20
+    });
+  }
+
+  // Move obstacles
+  obstacles.forEach(o => {
+    o.x -= speed;
+
+    if (collision(player, o)) {
+      running = false;
+      gameOver = true;
+      startBtn.textContent = "PLAY AGAIN";
+    }
+  });
+
+  obstacles = obstacles.filter(o => o.x > -50);
+
+  // Move coins
+  coinItems.forEach(c => {
+    c.x -= speed;
+
+    if (collision(player, c)) {
+      coins++;
+      c.x = -100;
+    }
+  });
+
+  coinItems = coinItems.filter(c => c.x > -50);
+}
+
+function drawMessage() {
+  if (!running) {
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = "center";
+
+    ctx.fillStyle = "#168bff";
+    ctx.font = "bold 38px Arial";
+
+    ctx.fillText(
+      gameOver ? "GAME OVER" : "NEXORA STAR RUNNER",
+      W / 2,
+      165
+    );
+
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+
+    ctx.fillText(
+      gameOver
+        ? "Final Score: " + score + " | Coins: " + coins
+        : "Press START GAME to begin",
+      W / 2,
+      215
+    );
+
+    ctx.textAlign = "left";
+  }
+}
+
+function loop() {
+  drawBackground();
+  update();
+  drawCoins();
+  drawObstacles();
+  drawPlayer();
+  drawScore();
+  drawMessage();
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
